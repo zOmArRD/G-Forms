@@ -1,5 +1,7 @@
 # GhostlyMC | Forms
 
+Project Views: ![visitors](https://visitor-badge.glitch.me/badge?page_id=G-Forms)
+
 A simple API for creating forms for PocketMine-MP.
 
 API Documentation: [G-Forms]()
