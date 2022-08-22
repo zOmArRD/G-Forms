@@ -74,7 +74,7 @@ use GhostlyMC\Forms\CustomForm;
 public function customForm(Player $player): void
 {
     $form = new CustomForm(function(Player $player, array $data) {
-        $player->sendMessage("Your username is {$data['username']}");
+        $player->sendMessage("Your username is {$data['label-username']}");
     });
     $form->setTitle('Title of the form');
     $form->addInput('Name', 'Enter your username', null, 'label-username');
