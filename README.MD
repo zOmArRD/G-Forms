@@ -24,12 +24,12 @@ composer require ghostlymc/g-forms
 
 ```php
 use pocketmine\player\Player;
-use GhostlyMC\Forms\SimpleForm;
+use GhostlyMC\Forms\GForms;
 use pocketmine\Server;
 
 public function simpleForm(Player $player): void
 {
-    $form = new SimpleForm(function(Player $player, Player $data) {
+    $form = GForms::createSimpleForm(function(Player $player, Player $data) {
         $player->teleport($data->getPosition())
         $player->sendMessage("you were teleported to {$data->getName()}");
     });
@@ -46,11 +46,11 @@ public function simpleForm(Player $player): void
 
 ```php
 use pocketmine\player\Player;
-use GhostlyMC\Forms\ModalForm;
+use GhostlyMC\Forms\GForms;
 
 public function modalForm(Player $player): void
 {
-    $form = new ModalForm(function(Player $player, bool $data) {
+    $form = GForms::createModalForm(function(Player $player, bool $data) {
         if ($data) {
             $player->sendMessage('You clicked yes');
         } else {
