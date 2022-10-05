@@ -24,7 +24,7 @@ composer require ghostlymc/g-forms
 
 ```php
 use pocketmine\player\Player;
-use GhostlyMC\Forms\GForms;
+use ghostlymc\forms\GForms;
 use pocketmine\Server;
 
 public function simpleForm(Player $player): void
@@ -46,7 +46,7 @@ public function simpleForm(Player $player): void
 
 ```php
 use pocketmine\player\Player;
-use GhostlyMC\Forms\GForms;
+use ghostlymc\forms\GForms;
 
 public function modalForm(Player $player): void
 {
@@ -69,7 +69,7 @@ public function modalForm(Player $player): void
 
 ```php
 use pocketmine\player\Player;
-use GhostlyMC\Forms\CustomForm;
+use ghostlymc\forms\GForms;
 
 public function customForm(Player $player): void
 {

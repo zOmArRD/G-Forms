@@ -1,7 +1,7 @@
 {
   "name": "ghostlymc/g-forms",
   "description": "FormAPI for GhostlyMC",
-  "minimum-stability": "stable",
+  "minimum-stability": "dev",
   "license": "MIT",
   "authors": [
     {
@@ -14,7 +14,7 @@
   },
   "autoload": {
     "psr-4": {
-      "GhostlyMC\\Forms\\": "src/"
+      "ghostlymc\\forms\\": "src/"
     }
   }
 }

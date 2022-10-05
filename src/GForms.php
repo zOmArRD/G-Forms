@@ -22,7 +22,7 @@
  */
 declare(strict_types=1);
 
-namespace GhostlyMC\Forms;
+namespace ghostlymc\forms;
 
 class GForms {
     /**
