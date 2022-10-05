@@ -1,25 +1,22 @@
 <?php
 declare(strict_types=1);
 
-namespace GhostlyMC\Forms;
+namespace ghostlymc\forms;
 
-use pocketmine\form\Form as IForm;
 use pocketmine\player\Player;
+use pocketmine\form\Form as IForm;
 
-abstract class Form implements IForm
-{
+abstract class Form implements IForm {
     protected array $data = [];
 
     /** @var callable|null */
     private $callable;
 
-    public function __construct(?callable $callable)
-    {
+    public function __construct(?callable $callable) {
         $this->callable = $callable;
     }
 
-    public function handleResponse(Player $player, $data): void
-    {
+    public function handleResponse(Player $player, $data): void {
         $this->processData($data);
         $callable = $this->getCallable();
         if ($callable !== null) {
@@ -29,18 +26,15 @@ abstract class Form implements IForm
 
     public function processData(&$data): void {}
 
-    public function getCallable(): ?callable
-    {
+    public function getCallable(): ?callable {
         return $this->callable;
     }
 
-    public function setCallable(?callable $callable): void
-    {
+    public function setCallable(?callable $callable): void {
         $this->callable = $callable;
     }
 
-    public function jsonSerialize()
-    {
+    public function jsonSerialize() {
         return $this->data;
     }
 }
