@@ -1,57 +1,48 @@
 <?php
+
 declare(strict_types=1);
 
 namespace ghostlymc\forms;
 
-use pocketmine\form\FormValidationException;
+use pocketmine\player\Player;
 
-class ModalForm extends Form {
-    private string $content = '';
+abstract class ModalForm implements Form {
 
-    public function __construct(?callable $callable) {
-        parent::__construct($callable);
-        $this->data['type'] = 'modal';
-        $this->data['title'] = '';
-        $this->data['content'] = $this->content;
-        $this->data['button1'] = '';
-        $this->data['button2'] = '';
+    private ?string $title, $first_button = "", $second_button = "", $content;
+
+    public function __construct(string $title, ?string $content = '') {
+        $this->title = $title;
+        $this->content = $content;
     }
 
-    public function processData(&$data): void {
-        if (!is_bool($data)) {
-            throw new FormValidationException("Expected a boolean response, got {${gettype($data)}}");
+    final public function setFirstButton(string $button): void {
+        $this->first_button = $button;
+    }
+
+    final public function setSecondButton(string $button): void {
+        $this->second_button = $button;
+    }
+
+    public function handleResponse(Player $player, $data): void {
+        if (!$data) {
+            $this->onClose($player);
+            return;
         }
+
+        $this->onAccept($player);
     }
 
-    public function setTitle(string $title): void {
-        $this->data['title'] = $title;
-    }
+    protected function onClose(Player $player): void {}
 
-    public function getTitle(): string {
-        return $this->data['title'];
-    }
+    protected function onAccept(Player $player): void {}
 
-    public function getContent(): string {
-        return $this->data['content'];
-    }
-
-    public function setContent(string $content): void {
-        $this->data['content'] = $content;
-    }
-
-    public function setButton1(string $text): void {
-        $this->data['button1'] = $text;
-    }
-
-    public function getButton1(): string {
-        return $this->data['button1'];
-    }
-
-    public function setButton2(string $text): void {
-        $this->data['button2'] = $text;
-    }
-
-    public function getButton2(): string {
-        return $this->data['button2'];
+    final public function jsonSerialize(): array {
+        return [
+            "type" => "modal",
+            "title" => $this->title,
+            "content" => $this->content,
+            "button1" => $this->first_button,
+            "button2" => $this->second_button
+        ];
     }
 }
