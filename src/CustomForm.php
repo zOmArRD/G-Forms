@@ -1,134 +1,81 @@
 <?php
+
 declare(strict_types=1);
 
 namespace ghostlymc\forms;
 
+use Closure;
+use Exception;
+use pocketmine\player\Player;
+use ghostlymc\forms\types\Icon;
 use pocketmine\form\FormValidationException;
+use ghostlymc\forms\entries\ModifiableEntry;
+use ghostlymc\forms\entries\custom\CustomFormEntry;
 
-class CustomForm extends Form {
-    private array $labelMap = [], $validationMethods = [];
+abstract class CustomForm implements Form {
 
-    public function __construct(?callable $callable) {
-        parent::__construct($callable);
-        $this->data['type'] = 'custom_form';
-        $this->data['title'] = '';
-        $this->data['content'] = [];
+    private string $title;
+
+    private ?Icon $icon;
+
+    /** @var CustomFormEntry[] */
+    private array $entries = [];
+
+    /** @var Closure[] */
+    private array $entry_listeners = [];
+
+    public function __construct(string $title) {
+        $this->title = $title;
     }
 
-    public function processData(&$data): void {
-        if ($data !== null && !is_array($data)) {
-            throw new FormValidationException("Expected an array response, got {${gettype($data)}}");
+    final public function setIcon(?Icon $icon): void {
+        $this->icon = $icon;
+    }
+
+    /**
+     * @param CustomFormEntry $entry
+     * @param Closure|null $listener
+     *
+     * Listener parameters:
+     *  * Player $player
+     *  * InputEntry $entry
+     *  * mixed $value [NOT NULL]
+     */
+    final public function addEntry(CustomFormEntry $entry, Closure $listener = null): void {
+        $this->entries[] = $entry;
+        if ($listener !== null) {
+            $this->entry_listeners[array_key_last($this->entries)] = $listener;
         }
+    }
 
-        if (is_array($data)) {
-            if (count($data) !== count($this->validationMethods)) {
-                throw new FormValidationException("Expected an array response with the size {${count($this->validationMethods)}}, got {${count($data)}}");
-            }
-
-            $new = [];
-            foreach ($data as $i => $v) {
-                $validationMethod = $this->validationMethods[$i] ?? null;
-
-                if ($validationMethod === null) {
-                    throw new FormValidationException("Invalid element $i");
+    public function handleResponse(Player $player, $data): void {
+        if ($data === null) {
+            $this->onClose($player);
+        } else {
+            try {
+                foreach ($data as $key => $value) {
+                    if (isset($this->entry_listeners[$key])) {
+                        $entry = $this->entries[$key];
+                        if ($entry instanceof ModifiableEntry) {
+                            $entry->validateUserInput($value);
+                        }
+                        $this->entry_listeners[$key]($player, $this->entries[$key], $value);
+                    }
                 }
-
-                if (!$validationMethod($v)) {
-                    throw new FormValidationException("Invalid type given for element {$this->labelMap[$i]}");
-                }
-
-                $new[$this->labelMap[$i]] = $v;
+            } catch (Exception $e) {
+                throw new FormValidationException($e->getMessage());
             }
-
-            $data = $new;
         }
     }
 
-    public function setTitle(string $title): void {
-        $this->data['title'] = $title;
-    }
+    public function onClose(Player $player): void {}
 
-    public function getTitle(): string {
-        return $this->data['title'];
-    }
-
-    public function addLabel(string $text, ?string $label = null): void {
-        $this->addContent([
-            'type' => 'label',
-            'text' => $text
-        ]);
-        $this->labelMap[] = $label ?? count($this->labelMap);
-        $this->validationMethods[] = static fn($v) => $v === null;
-    }
-
-    private function addContent(array $content): void {
-        $this->data['content'][] = $content;
-    }
-
-    public function addToggle(string $text, bool $default = null, ?string $label = null): void {
-        $content = [
-            'type' => 'toggle',
-            'text' => $text
+    final public function jsonSerialize(): array {
+        return [
+            "type" => "custom_form",
+            "title" => $this->title,
+            "icon" => $this->icon,
+            "content" => $this->entries
         ];
-        if ($default !== null) {
-            $content['default'] = $default;
-        }
-        $this->addContent($content);
-        $this->labelMap[] = $label ?? count($this->labelMap);
-        $this->validationMethods[] = static fn($v) => is_bool($v);
-    }
-
-    public function addSlider(string $text, int $min, int $max, int $step = -1, int $default = -1, ?string $label = null): void {
-        $content = [
-            'type' => 'slider',
-            'text' => $text,
-            'min' => $min,
-            'max' => $max
-        ];
-        if ($step !== -1) {
-            $content['step'] = $step;
-        }
-        if ($default !== -1) {
-            $content['default'] = $default;
-        }
-        $this->addContent($content);
-        $this->labelMap[] = $label ?? count($this->labelMap);
-        $this->validationMethods[] = static fn($v) => (is_float($v) || is_int($v)) && $v >= $min && $v <= $max;
-    }
-
-    public function addStepSlider(string $text, array $steps, int $defaultIndex = -1, ?string $label = null): void {
-        $content = [
-            'type' => 'step_slider',
-            'text' => $text,
-            'steps' => $steps
-        ];
-        if ($defaultIndex !== -1) {
-            $content['default'] = $defaultIndex;
-        }
-        $this->addContent($content);
-        $this->labelMap[] = $label ?? count($this->labelMap);
-        $this->validationMethods[] = static fn($v) => is_int($v) && isset($steps[$v]);
-    }
-
-    public function addDropdown(string $text, array $options, int $default = null, ?string $label = null): void {
-        $this->addContent([
-            'type' => 'dropdown',
-            'text' => $text,
-            'options' => $options,
-            'default' => $default
-        ]);
-        $this->labelMap[] = $label ?? count($this->labelMap);
-        $this->validationMethods[] = static fn($v) => is_int($v) && isset($options[$v]);
-    }
-
-    public function addInput(string $text, string $placeholder = '', string $default = null, ?string $label = null): void {
-        $this->addContent([
-            'type' => 'input',
-            'text' => $text,
-            'placeholder' => $placeholder,
-            'default' => $default
-        ]);
-        $this->labelMap[] = $label ?? count($this->labelMap);
-        $this->validationMethods[] = static fn($v) => is_string($v);
     }
 }

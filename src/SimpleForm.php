@@ -1,68 +1,75 @@
 <?php
+
 declare(strict_types=1);
 
 namespace ghostlymc\forms;
 
+use Closure;
+use Exception;
+use pocketmine\player\Player;
+use ghostlymc\forms\entries\simple\Button;
 use pocketmine\form\FormValidationException;
 
-class SimpleForm extends Form {
-    const IMAGE_TYPE_PATH = 0;
-    const IMAGE_TYPE_URL = 1;
-    const IMAGE_TYPE_NONE = -1;
+abstract class SimpleForm implements Form {
 
-    private string $content = '';
-    private array $labelMap = [];
+    private string $title;
 
-    public function __construct(?callable $callable) {
-        parent::__construct($callable);
-        $this->data['type'] = 'form';
-        $this->data['title'] = '';
-        $this->data['content'] = $this->content;
-        $this->data['buttons'] = [];
+    private ?string $content;
+
+    /** @var Button[] */
+    private array $buttons = [];
+
+    /** @var Closure[] */
+    private array $button_listeners = [];
+
+    public function __construct(string $title, ?string $content = "") {
+        $this->title = $title;
+        $this->content = $content;
     }
 
-    public function processData(&$data): void {
-        if ($data !== null) {
-            if (!is_int($data)) {
-                throw new FormValidationException("Expected on integer response, got {${gettype($data)}}");
-            }
-
-            $count = count($this->data['buttons']);
-
-            if ($data >= $count || $data < 0) {
-                throw new FormValidationException("Button $data does not exist");
-            }
-
-            $data = $this->labelMap[$data] ?? null;
+    /**
+     * @param Button $button
+     * @param Closure|null $listener
+     *
+     * Listener parameters:
+     *  * Player $player
+     *  * int $data
+     */
+    final public function addButton(Button $button, ?Closure $listener = null): void {
+        $this->buttons[] = $button;
+        if ($listener !== null) {
+            $this->button_listeners[array_key_last($this->buttons)] = $listener;
         }
     }
 
-    public function setTitle(string $title): void {
-        $this->data['title'] = $title;
-    }
-
-    public function getTitle(): string {
-        return $this->data['title'];
-    }
-
-    public function getContent(): string {
-        return $this->data['content'];
-    }
-
-    public function setContent(string $content): void {
-        $this->data['content'] = $content;
-    }
-
-    public function addButton(string $text, int $imageType = -1, string $imagePath = '', mixed $label = null): void {
-        $content = ['text' => $text];
-
-        if ($imageType !== -1) {
-            $content['image']['type'] = $imageType === 0 ? 'path' : 'url';
-            $content['image']['data'] = $imagePath;
+    final public function handleResponse(Player $player, $data): void {
+        if ($data === null) {
+            $this->onClose($player);
+        } else {
+            try {
+                if (is_int($data)) {
+                    if (isset($this->button_listeners[$data])) {
+                        $this->button_listeners[$data]($player, $data);
+                    } else {
+                        $this->onClickButton($player, $this->buttons[$data], $data);
+                    }
+                }
+            } catch (Exception $e) {
+                throw new FormValidationException($e->getMessage());
+            }
         }
-
-        $this->data['buttons'][] = $content;
-        $this->labelMap[] = $label ?? count($this->labelMap);
     }
 
+    public function onClose(Player $player): void {}
+
+    public function onClickButton(Player $player, Button $button, int $index): void {}
+
+    final public function jsonSerialize(): array {
+        return [
+            "type" => "form",
+            "title" => $this->title,
+            "content" => $this->content,
+            "buttons" => $this->buttons
+        ];
+    }
 }
