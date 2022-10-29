@@ -51,27 +51,6 @@ class CustomSimpleForm extends SimpleForm {
 #### 2 - Create a Modal Form.
 
 ```php
-use pocketmine\player\Player;
-use ghostlymc\forms\GForms;
-
-public function modalForm(Player $player): void
-{
-    $form = GForms::createModalForm(function(Player $player, bool $data) {
-        if ($data) {
-            $player->sendMessage('You clicked yes');
-        } else {
-            $player->sendMessage('You clicked no');
-        }
-    });
-    $form->setTitle('Modal Form');
-    $form->setContent('Do you want to continue?');
-    $form->addButton('Yes');
-    $form->addButton('No');
-    $player->sendForm($form);
-}
-```
-
-```php
 namespace yourpath\here;
 
 use pocketmine\player\Player;
